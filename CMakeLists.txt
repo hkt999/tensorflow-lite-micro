@@ -8,42 +8,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_CXX_FLAGS "-fno-rtti -fno-threadsafe-statics")
 
-add_library(tensorflow-lite "")
-
-target_include_directories(tensorflow-lite
-  PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/src/
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/DSP/Include
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/ruy
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/gemmlowp
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/kissfft
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/flatbuffers
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/Core/Include
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/flatbuffers/include
-  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/NN/Include
-)
-
-target_compile_definitions(
-  tensorflow-lite
-  PUBLIC
-  COMPILE_DEFINITIONS TF_LITE_DISABLE_X86_NEON=1
-  COMPILE_DEFINITIONS TF_LITE_STATIC_MEMORY=1
-  COMPILE_DEFINITIONS CMSIS_NN=1
-)
-
-target_compile_options(
-  tensorflow-lite
-  PUBLIC
-  -fno-exceptions
-)
-
-target_link_libraries(
-  tensorflow-lite
-)
-
-target_sources(tensorflow-lite
-  PUBLIC
+add_library(
+  tensorflow-lite 
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/c/common.c
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/core/api/error_reporter.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/core/api/flatbuffer_conversions.cpp
@@ -328,7 +294,45 @@ target_sources(tensorflow-lite
   ${CMAKE_CURRENT_LIST_DIR}/src/third_party/ruy/ruy/profiler/instrumentation.h
 )
 
-add_library(tensorflow-lite-test "")
+target_include_directories(tensorflow-lite
+  PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/src/
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/DSP/Include
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/ruy
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/gemmlowp
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/kissfft
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/flatbuffers
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/Core/Include
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/flatbuffers/include
+  ${CMAKE_CURRENT_LIST_DIR}/src/third_party/cmsis/CMSIS/NN/Include
+)
+
+target_compile_definitions(
+  tensorflow-lite
+  PUBLIC
+  COMPILE_DEFINITIONS TF_LITE_DISABLE_X86_NEON=1
+  COMPILE_DEFINITIONS TF_LITE_STATIC_MEMORY=1
+  COMPILE_DEFINITIONS CMSIS_NN=1
+)
+
+target_compile_options(
+  tensorflow-lite
+  PUBLIC
+  -fno-exceptions
+)
+
+target_link_libraries(
+  tensorflow-lite
+)
+
+add_library(
+  tensorflow-lite-test
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/benchmarks/keyword_scrambled_model_data.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/test_conv_model.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/micro_test.h
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/test_conv_model.h
+)
 
 target_include_directories(tensorflow-lite-test
   PUBLIC
@@ -360,15 +364,6 @@ target_compile_options(
 
 target_link_libraries(
   tensorflow-lite-test
-)
-
-target_sources(tensorflow-lite-test
-  PUBLIC
-  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/benchmarks/keyword_scrambled_model_data.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/test_conv_model.cpp
-  #${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/util_test.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/micro_test.h
-  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/testing/test_conv_model.h
 )
 
 add_subdirectory("examples/keyword_benchmark")
