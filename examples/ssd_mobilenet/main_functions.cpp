@@ -21,6 +21,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
+#include <stdlib.h>
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -45,12 +46,7 @@ namespace {
 char *read_model()
 {
 	int size;
-	//FILE *infile = fopen("model/ssd_mobilenet_essay_neo.tflite", "rb");
-	//FILE *infile = fopen("model/q_aware_model.tflite", "rb");
-	//FILE *infile = fopen("model/q_aware_model-8-10.tflite", "rb");
-	//FILE *infile = fopen("model/ssdlite_mobilenetv1_0.5_odapi.tflite", "rb");
 	FILE *infile = fopen("model/ssdlite_mobilenetv1_0.5_int8_odapi.tflite", "rb");
-	//FILE *infile = fopen("model/lite-model_ssd_mobilenet_v1_1_metadata_2.tflite", "rb");
 	if (infile == NULL) {
 		printf("Error in opening model.\n");
 		exit(0);
@@ -108,18 +104,8 @@ void setup() {
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
 
-  //input->data.uint8 = (uint8_t *)malloc(kMaxImageSize);
-  input->data.uint8 = (uint8_t *)malloc(3*300*300);
-
-
-  TfLiteTensor* output0 = interpreter->output(0);
-  TfLiteTensor* output1 = interpreter->output(1);
-  TfLiteTensor* output2 = interpreter->output(2);
-  TfLiteTensor* output3 = interpreter->output(3);
-  printf("output0: %p, output0->data.f: %p\n", output0, output0->data.f);
-  printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
-  printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);
-  printf("output3: %p, output3->data.f: %p\n", output3, output3->data.f);
+  // allocate input data buffer
+  input->data.int8 = (int8_t *)malloc(input->bytes);
 
   // Run the model on this input and make sure it succeeds.
   if (kTfLiteOk != interpreter->Invoke()) {
@@ -128,13 +114,11 @@ void setup() {
 
   printf("after involke !!\n");
 
-  output0 = interpreter->output(0);
-  output1 = interpreter->output(1);
-  output2 = interpreter->output(2);
-  output3 = interpreter->output(3);
+  TfLiteTensor* output0 = interpreter->output(0);
+  TfLiteTensor* output1 = interpreter->output(1);
+  TfLiteTensor* output2 = interpreter->output(2);
+  TfLiteTensor* output3 = interpreter->output(3);
 
-  //printf("sizeof(*output0)=%ld\n", sizeof(*output0));
-  //printf("sizeof(TfLiteTensor)=%ld\n", sizeof(TfLiteTensor));
   printf("output0: %p, output0->data.f: %p\n", output0, output0->data.f);
   printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
   printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);
