@@ -70,6 +70,7 @@ class ContextHelper {
 
 }  // namespace internal
 
+#define MAX_INPUT_TENSORS	4
 #define MAX_OUTPUT_TENSORS	4
 class MicroInterpreter {
  public:
@@ -203,7 +204,7 @@ class MicroInterpreter {
 
   // TODO(b/162311891): Clean these pointers up when this class supports buffers
   // from TfLiteEvalTensor.
-  TfLiteTensor* input_tensor_;
+  TfLiteTensor* input_tensor_[MAX_INPUT_TENSORS];
   TfLiteTensor* output_tensor_[MAX_OUTPUT_TENSORS];
 };
 

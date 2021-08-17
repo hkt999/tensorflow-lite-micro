@@ -117,10 +117,13 @@ MicroInterpreter::MicroInterpreter(const Model* model,
       tensors_allocated_(false),
       initialization_status_(kTfLiteError),
       eval_tensors_(nullptr),
-      context_helper_(error_reporter_, &allocator_, model),
-      input_tensor_(nullptr) {
+      context_helper_(error_reporter_, &allocator_, model) {
 
-  for (int i=0; i< MAX_OUTPUT_TENSORS; i++) {
+  for (int i=0; i<MAX_INPUT_TENSORS; i++) {
+	  input_tensor_[i] = nullptr;
+  }
+
+  for (int i=0; i<MAX_OUTPUT_TENSORS; i++) {
 	  output_tensor_[i] = nullptr;
   }
   Init(profiler);
@@ -138,8 +141,10 @@ MicroInterpreter::MicroInterpreter(const Model* model,
       tensors_allocated_(false),
       initialization_status_(kTfLiteError),
       eval_tensors_(nullptr),
-      context_helper_(error_reporter_, &allocator_, model),
-      input_tensor_(nullptr) {
+      context_helper_(error_reporter_, &allocator_, model) {
+  for (int i=0; i<MAX_INPUT_TENSORS; i++) {
+	  input_tensor_[i] = nullptr;
+  }
   for (int i=0; i< MAX_OUTPUT_TENSORS; i++) {
 	  output_tensor_[i] = nullptr;
   }
@@ -382,20 +387,20 @@ TfLiteTensor* MicroInterpreter::input(size_t index) {
                          length);
     return nullptr;
   }
-  if (index != 0) {
+  if (index >= MAX_INPUT_TENSORS) {
     TF_LITE_REPORT_ERROR(
         error_reporter_,
-        "Input tensors not at index 0 are allocated from the "
+        "Input tensors not at index %d are allocated from the "
         "persistent memory arena. Repeat calls will cause excess "
-        "allocation!");
+        "allocation!", index);
     return allocator_.AllocatePersistentTfLiteTensor(model_, eval_tensors_,
                                                      inputs().Get(index));
   }
-  if (input_tensor_ == nullptr) {
-    input_tensor_ = allocator_.AllocatePersistentTfLiteTensor(
+  if (input_tensor_[index] == nullptr) {
+    input_tensor_[index] = allocator_.AllocatePersistentTfLiteTensor(
         model_, eval_tensors_, inputs().Get(index));
   }
-  return input_tensor_;
+  return input_tensor_[index];
 }
 
 TfLiteTensor* MicroInterpreter::output(size_t index) {
@@ -409,9 +414,9 @@ TfLiteTensor* MicroInterpreter::output(size_t index) {
   if (index >= MAX_OUTPUT_TENSORS) {
     TF_LITE_REPORT_ERROR(
         error_reporter_,
-        "Output tensors not at index 0 are allocated from the "
+        "Output tensors not at index %d are allocated from the "
         "persistent memory arena. Repeat calls will cause excess "
-        "allocation!");
+        "allocation!", index);
     return allocator_.AllocatePersistentTfLiteTensor(model_, eval_tensors_,
                                                      outputs().Get(index));
   }
