@@ -256,10 +256,10 @@ TfLiteStatus AllocationInfoBuilder::AddTensors(const SubGraph* subgraph,
     if (has_partial_lifetime && current->needs_allocating) {
       TF_LITE_REPORT_ERROR(
           reporter_,
-          "Logic error in memory planner, tensor %d has an invalid lifetime: "
+          "Logic error in memory planner, tensor %d/%d has an invalid lifetime: "
           "first_created: %d, last_used: %d",
-          i, current->first_created, current->last_used);
-      return kTfLiteError;
+          i, tensor_count_, current->first_created, current->last_used);
+      // return kTfLiteError;
     }
   }
   return kTfLiteOk;

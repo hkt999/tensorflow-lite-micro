@@ -22,6 +22,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
@@ -71,17 +72,26 @@ void setup() {
   //
   // tflite::AllOpsResolver resolver;
   // NOLINTNEXTLINE(runtime-global-variables)
+#if 0
   static tflite::MicroMutableOpResolver<5> micro_op_resolver;
   micro_op_resolver.AddAveragePool2D();
   micro_op_resolver.AddConv2D();
   micro_op_resolver.AddDepthwiseConv2D();
   micro_op_resolver.AddReshape();
   micro_op_resolver.AddSoftmax();
+#else
+  static tflite::AllOpsResolver all_ops_resolver;
+#endif
 
   // Build an interpreter to run the model with.
   // NOLINTNEXTLINE(runtime-global-variables)
+#if 0
   static tflite::MicroInterpreter static_interpreter(
       model, micro_op_resolver, tensor_arena, kTensorArenaSize, error_reporter);
+#else
+  static tflite::MicroInterpreter static_interpreter(
+      model, all_ops_resolver, tensor_arena, kTensorArenaSize, error_reporter);
+#endif
   interpreter = &static_interpreter;
 
   // Allocate memory from the tensor_arena for the model's tensors.
@@ -92,7 +102,11 @@ void setup() {
   }
 
   // Get information about the memory area to use for the model's input.
+  // Allocate input tensor
   input = interpreter->input(0);
+  printf("allocate input tensor p=%p, data=%p\n", input, input->data.uint8);
+  printf("heap=%p to %p\n", tensor_arena, &tensor_arena[kTensorArenaSize-1]);
+  //input->data.int8 = (int8_t *)malloc(96*96);
 }
 
 // The name of this function is important for Arduino compatibility.
@@ -109,6 +123,8 @@ void loop() {
   }
 
   TfLiteTensor* output = interpreter->output(0);
+  printf("allocate output tensor p=%p, data=%p\n", output, output->data.uint8);
+  printf("heap=%p to %p\n", tensor_arena, &tensor_arena[kTensorArenaSize-1]);
 
   // Process the inference results.
   int8_t person_score = output->data.uint8[kPersonIndex];
