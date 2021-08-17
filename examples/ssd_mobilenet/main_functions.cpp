@@ -14,9 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "main_functions.h"
-#include "model/test-image.h"
 #include "model_settings.h"
-#include "model/lite-model_ssd_mobilenet_v1_1_metadata_2.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
@@ -110,10 +108,18 @@ void setup() {
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
 
-  printf("input->data.uint8=%p, %p, kMaxImageSize=%d, test_image_data=%p\n", input->data.uint8, input->data.int8, kMaxImageSize, test_image_data);
   //input->data.uint8 = (uint8_t *)malloc(kMaxImageSize);
   input->data.uint8 = (uint8_t *)malloc(3*300*300);
-  //memcpy(input->data.uint8, test_image_data, kMaxImageSize);
+
+
+  TfLiteTensor* output0 = interpreter->output(0);
+  TfLiteTensor* output1 = interpreter->output(1);
+  TfLiteTensor* output2 = interpreter->output(2);
+  TfLiteTensor* output3 = interpreter->output(3);
+  printf("output0: %p, output0->data.f: %p\n", output0, output0->data.f);
+  printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
+  printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);
+  printf("output3: %p, output3->data.f: %p\n", output3, output3->data.f);
 
   // Run the model on this input and make sure it succeeds.
   if (kTfLiteOk != interpreter->Invoke()) {
@@ -122,13 +128,13 @@ void setup() {
 
   printf("after involke !!\n");
 
-  TfLiteTensor* output0 = interpreter->output(0);
-  TfLiteTensor* output1 = interpreter->output(1);
-  TfLiteTensor* output2 = interpreter->output(2);
-  TfLiteTensor* output3 = interpreter->output(3);
+  output0 = interpreter->output(0);
+  output1 = interpreter->output(1);
+  output2 = interpreter->output(2);
+  output3 = interpreter->output(3);
 
-  printf("sizeof(*output0)=%ld\n", sizeof(*output0));
-  printf("sizeof(TfLiteTensor)=%ld\n", sizeof(TfLiteTensor));
+  //printf("sizeof(*output0)=%ld\n", sizeof(*output0));
+  //printf("sizeof(TfLiteTensor)=%ld\n", sizeof(TfLiteTensor));
   printf("output0: %p, output0->data.f: %p\n", output0, output0->data.f);
   printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
   printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);

@@ -118,8 +118,11 @@ MicroInterpreter::MicroInterpreter(const Model* model,
       initialization_status_(kTfLiteError),
       eval_tensors_(nullptr),
       context_helper_(error_reporter_, &allocator_, model),
-      input_tensor_(nullptr),
-      output_tensor_(nullptr) {
+      input_tensor_(nullptr) {
+
+  for (int i=0; i< MAX_OUTPUT_TENSORS; i++) {
+	  output_tensor_[i] = nullptr;
+  }
   Init(profiler);
 }
 
@@ -136,8 +139,10 @@ MicroInterpreter::MicroInterpreter(const Model* model,
       initialization_status_(kTfLiteError),
       eval_tensors_(nullptr),
       context_helper_(error_reporter_, &allocator_, model),
-      input_tensor_(nullptr),
-      output_tensor_(nullptr) {
+      input_tensor_(nullptr) {
+  for (int i=0; i< MAX_OUTPUT_TENSORS; i++) {
+	  output_tensor_[i] = nullptr;
+  }
   Init(profiler);
 }
 
@@ -401,7 +406,7 @@ TfLiteTensor* MicroInterpreter::output(size_t index) {
                          length);
     return nullptr;
   }
-  if (index != 0) {
+  if (index >= MAX_OUTPUT_TENSORS) {
     TF_LITE_REPORT_ERROR(
         error_reporter_,
         "Output tensors not at index 0 are allocated from the "
@@ -410,13 +415,13 @@ TfLiteTensor* MicroInterpreter::output(size_t index) {
     return allocator_.AllocatePersistentTfLiteTensor(model_, eval_tensors_,
                                                      outputs().Get(index));
   }
-  if (output_tensor_ == nullptr) {
+  if (output_tensor_[index] == nullptr) {
     // TODO(b/162311891): Drop these allocations when the interpreter supports
     // handling buffers from TfLiteEvalTensor.
-    output_tensor_ = allocator_.AllocatePersistentTfLiteTensor(
+    output_tensor_[index] = allocator_.AllocatePersistentTfLiteTensor(
         model_, eval_tensors_, outputs().Get(index));
   }
-  return output_tensor_;
+  return output_tensor_[index];
 }
 
 TfLiteTensor* MicroInterpreter::tensor(size_t index) {

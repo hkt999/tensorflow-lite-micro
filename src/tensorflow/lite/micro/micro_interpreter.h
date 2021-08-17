@@ -70,6 +70,7 @@ class ContextHelper {
 
 }  // namespace internal
 
+#define MAX_OUTPUT_TENSORS	4
 class MicroInterpreter {
  public:
   // The lifetime of the model, op resolver, tensor arena, error reporter and
@@ -203,7 +204,7 @@ class MicroInterpreter {
   // TODO(b/162311891): Clean these pointers up when this class supports buffers
   // from TfLiteEvalTensor.
   TfLiteTensor* input_tensor_;
-  TfLiteTensor* output_tensor_;
+  TfLiteTensor* output_tensor_[MAX_OUTPUT_TENSORS];
 };
 
 }  // namespace tflite
