@@ -31,8 +31,6 @@ target_sources(ssd_mobilenet_detection_int8
   ${CMAKE_CURRENT_LIST_DIR}/nms.h
   ${CMAKE_CURRENT_LIST_DIR}/nms.cpp
   ${CMAKE_CURRENT_LIST_DIR}/model_settings.h
-  ${CMAKE_CURRENT_LIST_DIR}/model/test-image.h
-  ${CMAKE_CURRENT_LIST_DIR}/model/test-image.cpp
 )
 
 target_link_directories(ssd_mobilenet_detection_int8
