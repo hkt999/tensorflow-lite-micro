@@ -21,6 +21,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
+#include "nms.h"
 #include <stdlib.h>
 
 // Globals, used for compatibility with Arduino-style sketches.
@@ -64,6 +65,24 @@ char *read_model()
 
 	printf("read model p=%p, size=%d\n", p, size);
 	return (char *) p;
+}
+
+class DetectionCb : public NmsCb
+{
+    public:
+        DetectionCb():NmsCb() {}
+        virtual ~DetectionCb() {}
+
+    public:
+        int callback(BoundingBox &boundingBox);
+};
+
+int DetectionCb::callback( BoundingBox &b )
+{
+    printf("class=%d (%s), score=%d%%, box=(%d,%d)-(%d,%d)\n",
+        b.classId, kCategoryLabels[b.classId], b.score, b.minX, b.minY, b.maxX, b.maxY);
+
+    return 0;
 }
 
 void setup() {
@@ -123,7 +142,31 @@ void setup() {
   printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
   printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);
   printf("output3: %p, output3->data.f: %p\n", output3, output3->data.f);
-  printf("%p, numbox=%d\n", output3->data.f, (int)output3->data.f[0]);
+
+  float *out0 = output0->data.f;
+  float *out1 = output1->data.f;
+  float *out2 = output2->data.f;
+  float *out3 = output3->data.f;
+
+  DetectionCb cb;
+  NmsPostProcess nms;
+  int numbox = (int)*out3;
+  for (int i=0; i<numbox; i++) {
+    int minX = (int)(kNumCols * out0[i*4+1]);
+    int minY = (int)(kNumRows * out0[i*4]);
+    int maxX = (int)(kNumCols * out0[i*4+3]);
+    int maxY = (int)(kNumRows * out0[i*4+2]);
+    int score = (int)(out2[i] * 100.0);
+    int classId = (int) out1[i];
+	printf("minX=%d, minY=%d, maxX = %d, maxY = %d, score=%d, classId=%d\n", minX, minY, maxX, maxY, score, classId);
+    #define SCORE_THRESHOLD 60
+    if (score > SCORE_THRESHOLD) {
+      BoundingBox box( minX, minY, maxX, maxY, score, classId);
+      nms.AddBoundingBox(box);
+    }
+	#define OVERLAY_THRESHOLD  50
+    nms.Go(OVERLAY_THRESHOLD, cb); /* overlay threshold */
+  }
 }
 
 // The name of this function is important for Arduino compatibility.
