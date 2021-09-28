@@ -22,6 +22,9 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 
+//#define DEBUG0(fmt...) printf(fmt)
+#define DEBUG0(fmt...) (void(0))
+
 namespace tflite {
 namespace {
 
@@ -64,7 +67,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   TF_LITE_ENSURE(context, input->type == kTfLiteFloat32 ||
                               input->type == kTfLiteInt16 ||
-                              input->type == kTfLiteInt8);
+                              input->type == kTfLiteInt8 ||
+							  input->type == kTfLiteUInt8);
   TF_LITE_ENSURE(context, output->type == kTfLiteUInt8 ||
                               output->type == kTfLiteInt8 ||
                               output->type == kTfLiteInt16 ||
@@ -166,12 +170,43 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                                   data->quantization_params.zero_point,
                                   tflite::micro::GetTensorData<int8_t>(output));
         break;
+	  case kTfLiteUInt8:
+        reference_ops::Requantize(tflite::micro::GetTensorData<int8_t>(input),
+                                  size, data->output_multiplier,
+                                  data->output_shift, data->input_zero_point,
+                                  data->quantization_params.zero_point,
+                                  tflite::micro::GetTensorData<uint8_t>(output));
+		break;
       default:
         TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
                            TfLiteTypeGetName(input->type),
                            TfLiteTypeGetName(output->type));
         return kTfLiteError;
     }
+  } else if (input->type == kTfLiteUInt8) {
+	  DEBUG0("UInt8 Quantize !\n");
+	  size_t size = ElementCount(*input->dims);
+	  switch (output->type) {
+        case kTfLiteInt8:
+          reference_ops::Requantize(tflite::micro::GetTensorData<uint8_t>(input),
+                                  size, data->output_multiplier,
+                                  data->output_shift, data->input_zero_point,
+                                  data->quantization_params.zero_point,
+                                  tflite::micro::GetTensorData<int8_t>(output));
+		  break;
+		case kTfLiteUInt8:
+          reference_ops::Requantize(tflite::micro::GetTensorData<uint8_t>(input),
+                                  size, data->output_multiplier,
+                                  data->output_shift, data->input_zero_point,
+                                  data->quantization_params.zero_point,
+                                  tflite::micro::GetTensorData<uint8_t>(output));
+		  break;
+		default:
+          TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
+                           TfLiteTypeGetName(input->type),
+                           TfLiteTypeGetName(output->type));
+          return kTfLiteError;
+	  }
   } else {
     TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
                        TfLiteTypeGetName(input->type),
