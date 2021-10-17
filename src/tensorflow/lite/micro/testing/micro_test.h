@@ -110,8 +110,6 @@ extern tflite::ErrorReporter* reporter;
     }                                                                          \
   } while (false)
 
-// TODO(b/139142772): this macro is used with types other than ints even though
-// the printf specifier is %d.
 #define TF_LITE_MICRO_EXPECT_EQ(x, y)                                          \
   do {                                                                         \
     auto vx = x;                                                               \
@@ -120,6 +118,18 @@ extern tflite::ErrorReporter* reporter;
       micro_test::reporter->Report(#x " == " #y " failed at %s:%d (%d vs %d)", \
                                    __FILE__, __LINE__, static_cast<int>(vx),   \
                                    static_cast<int>(vy));                      \
+      micro_test::did_test_fail = true;                                        \
+    }                                                                          \
+  } while (false)
+
+#define TF_LITE_MICRO_EXPECT_EQ_FLOAT32(x, y)                                  \
+  do {                                                                         \
+    auto vx = x;                                                               \
+    auto vy = y;                                                               \
+    if ((vx) != (vy)) {                                                        \
+      micro_test::reporter->Report(#x " == " #y " failed at %s:%d (%f vs %f)", \
+                                   __FILE__, __LINE__, static_cast<float>(vx), \
+                                   static_cast<float>(vy));                      \
       micro_test::did_test_fail = true;                                        \
     }                                                                          \
   } while (false)
