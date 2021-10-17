@@ -78,6 +78,7 @@ TfLiteRegistration Register_PRELU();
 TfLiteRegistration Register_REDUCE_MAX();
 TfLiteRegistration Register_RELU();
 TfLiteRegistration Register_RELU6();
+TfLiteRegistration Register_LEAKY_RELU();
 TfLiteRegistration Register_RESHAPE();
 TfLiteRegistration Register_RESIZE_NEAREST_NEIGHBOR();
 TfLiteRegistration Register_ROUND();
@@ -92,7 +93,8 @@ TfLiteRegistration Register_SUB();
 TfLiteRegistration Register_UNPACK();
 TfLiteRegistration Register_L2_NORMALIZATION();
 TfLiteRegistration Register_TANH();
-
+TfLiteRegistration Register_EXP();
+TfLiteRegistration Register_RESIZE_BILINEAR();
 }  // namespace micro
 }  // namespace ops
 }  // namespace tflite

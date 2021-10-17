@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include <opencv2/opencv.hpp>
 #include "main_functions.h"
 #include "model_settings.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -24,7 +23,7 @@ limitations under the License.
 #include "tensorflow/lite/version.h"
 #include <stdlib.h>
 
-using namespace cv;
+#define DEBUG0(fmt...)	printf(fmt)
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -41,7 +40,8 @@ namespace {
   // signed value.
 
   // An area of memory to use for input, output, and intermediate arrays.
-  constexpr int kTensorArenaSize = 2 * 1024 * 1024;
+  // constexpr int kTensorArenaSize = 1.2 * 1024 * 1024;
+  constexpr int kTensorArenaSize = 4 * 1024 * 1024;
   static uint8_t tensor_arena[kTensorArenaSize];
 }  // namespace
 
@@ -49,9 +49,9 @@ namespace {
 char *read_model(char *model_filename)
 {
 	int size;
-  FILE *infile = fopen(model_filename, "rb");
+	FILE *infile = fopen(model_filename, "rb");
 	if (infile == NULL) {
-		printf("Error in opening model.\n");
+		printf("Error in opening model (%s).\n", model_filename);
 		exit(0);
 	}
 
@@ -69,21 +69,18 @@ char *read_model(char *model_filename)
 	return (char *) p;
 }
 
-static cv::Mat resizedImage;
-uint8_t* read_image(char *image_filename)
+
+static void dump_tensor(const char *name, TfLiteTensor *tensor)
 {
-    cv::Mat img = imread(image_filename, cv::IMREAD_COLOR);
-    if(img.empty())
-    {
-          std::cout << "Could not read the image: " << image_filename << std::endl;
-          return NULL;
-    }
-    
-    resize(img, resizedImage, Size(300, 300));
-    return resizedImage.data;
+  DEBUG0("%s: %p, data.raw: %p, dims->size=%d, type=%d, size=%ld\n", name,
+    tensor, tensor->data.f, tensor->dims->size, tensor->type, tensor->bytes);
+  for (int i=0; i<tensor->dims->size; i++) {
+	  DEBUG0("  dim(%d)=%d\n", i, tensor->dims->data[i]);
+  }
 }
 
-void setup(char *model_filename, char *jpeg_filename, int score_threshold) {
+void setup(char *model_filename, m_info_t *info) 
+{
   // Set up logging. Google style is to avoid globals or statics because of
   // lifetime uncertainty, but since this has a trivial destructor it's okay.
   // NOLINTNEXTLINE(runtime-global-variables)
@@ -93,8 +90,7 @@ void setup(char *model_filename, char *jpeg_filename, int score_threshold) {
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
   //model = tflite::GetModel(lite_model_ssd_mobilenet_v1_1_metadata_2_tflite);
-  char *p = read_model(model_filename);
-  model = tflite::GetModel(p);
+  model = tflite::GetModel( read_model(model_filename));
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Model provided is schema version %d not equal "
@@ -103,7 +99,6 @@ void setup(char *model_filename, char *jpeg_filename, int score_threshold) {
     return;
   }
 
-
   static tflite::AllOpsResolver all_ops_resolver;
   static tflite::MicroInterpreter static_interpreter(
       model, all_ops_resolver, tensor_arena, kTensorArenaSize, error_reporter);
@@ -111,62 +106,106 @@ void setup(char *model_filename, char *jpeg_filename, int score_threshold) {
   interpreter = &static_interpreter;
 
   // Allocate memory from the tensor_arena for the model's tensors.
+  DEBUG0("interpreter->AllocateTensors()\n");
   TfLiteStatus allocate_status = interpreter->AllocateTensors();
+
+#if 0
+  static float _bounding_box[4*10];
+  static float _score[10];
+  static float _class[10];
+
+  // rewrite the output data for default post processor 
+  TfLiteTensor* output0 = interpreter->output(0);
+  TfLiteTensor* output1 = interpreter->output(1);
+  TfLiteTensor* output2 = interpreter->output(2);
+
+  DEBUG0("before output0->data.f=%p\n", output0->data.f);
+  output0->data.f = (float *)_bounding_box;
+  output0->bytes = sizeof(_bounding_box);
+  DEBUG0("after output0->data.f=%p\n", output0->data.f);
+  output1->data.f = (float *)_class;
+  output1->bytes = sizeof(_class);
+  output2->data.f = (float *)_score;
+  output2->bytes = sizeof(_score);
+#endif
 
   if (allocate_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
     return;
   }
 
-
-  fprintf(stderr, "Load model and allocate tensors success\n");
-
-  // Get information about the memory area to use for the model's input.
+  memset(info, 0, sizeof(m_info_t));
+  DEBUG0("Load model and allocate tensors success\n");
   input = interpreter->input(0);
+  dump_tensor("input_tensor", input);
+  info->bytes = input->bytes;
+  info->width = input->dims->data[2];
+  info->height = input->dims->data[1];
+}
 
-  // allocate input data buffer
-  input->data.int8 = (int8_t *)malloc(input->bytes);
-
-  uint8_t *image_data = read_image(jpeg_filename);
-  int i = 0;
-	for (i = 0; i < 300*300*3 ; i++) {
-		int tmp = image_data[i] - 128;
-		input->data.int8[i] = (int8_t) tmp;
-	}
-
+void detect(unsigned char *image)
+{
+  int8_t *dst = (int8_t *)input->data.int8;
+  uint8_t *src = (uint8_t *)image;
+  int count = input->bytes;
+  while (count-->0) {
+	  *dst++ = (int8_t)((int)(*src++) - 128);
+  }
   // Run the model on this input and make sure it succeeds.
   if (kTfLiteOk != interpreter->Invoke()) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed.");
   }
 
-  printf("after involke !!\n");
-
   TfLiteTensor* output0 = interpreter->output(0);
   TfLiteTensor* output1 = interpreter->output(1);
-  TfLiteTensor* output2 = interpreter->output(2);
-  TfLiteTensor* output3 = interpreter->output(3);
+  dump_tensor("output0", output0);
+  dump_tensor("output1", output1);
 
-  printf("output0: %p, output0->data.f: %p\n", output0, output0->data.f);
-  printf("output1: %p, output1->data.f: %p\n", output1, output1->data.f);
-  printf("output2: %p, output2->data.f: %p\n", output2, output2->data.f);
-  printf("output3: %p, output3->data.f: %p\n", output3, output3->data.f);
+  float *boxes = output0->data.f;
+  float *scores = output1->data.f;
+  int bboxes_num = output0->dims->data[1];
+  DEBUG0("number of box = %d\n", bboxes_num);
+  int classes_num = 1;
+  int score_threshold = 5;
+  int detected_objects = 0;
+  for (int i=0;i<bboxes_num;i++) {
+      float score = scores[i];
+      if (int(score * 100) > score_threshold ) {
+        detected_objects++;
+        float x = boxes[i*4];
+        float y = boxes[i*4+1];
+        float w = boxes[i*4+2];
+        float h = boxes[i*4+3];
+        DEBUG0("inference raw output score=%f (cx=%f, cy=%f), (w=%f, h=%f)\n", score, x, y, w, h);
+#if 0
+        int minx = (x - w / 2.0);
+        int maxx = (x + w / 2.0);
+        int miny = (y - h / 2.0);
+        int maxy = (y + h / 2.0);
+        DEBUG0("score: %d, box: (%d,%d), (%d, %d)\n", (int)(score* 100), minx, miny, maxx, maxy);
+#endif
 
-  int numbox = (int)output3->data.f[0];
-  printf("%p, numbox=%d\n", output3->data.f, numbox);
-
-  for (i = 0; i < numbox; i++) {
-    int minX = (int)(300.0 * output0->data.f[i*4+1]);
-		int minY = (int)(300.0 * output0->data.f[i*4]);
-		int maxX = (int)(300.0 * output0->data.f[i*4+3]);
-		int maxY = (int)(300.0 * output0->data.f[i*4+2]);
-    int classId = (int) output1->data.f[i];
-    int score = (int)(output2->data.f[i] * 100.0);
-    fprintf(stderr, "classid: %d, score: %d%%, (%d,%d),(%d,%d)\n", classId, score, minX, minY, maxX, maxY);
+        // BoundingBox box( 1, 1, 100, 100, score * 100, 0);
+        // nms.AddBoundingBox(box);
+        //if (detect_cb != NULL) {
+        //  detect_cb(0, int(score * 100), 0, 0, 0, 0);
+        //}
+      }
   }
 
+#if 0 // mobilenet ssd postprocess output
+  #define COL_RES	416
+  #define ROW_RES	234
+  int numBoxes = 1365;
+  DEBUG0("numBoxes=%d\n", numBoxes);
+  for (int i=0; i<numBoxes; i++) {
+    int minX = (int)(COL_RES * out0[i*4+1]);
+    int minY = (int)(ROW_RES * out0[i*4]);
+    int maxX = (int)(COL_RES * out0[i*4+3]);
+    int maxY = (int)(ROW_RES * out0[i*4+2]);
+    int score = (int)(out1[i] * 100.0);
+	printf("idx(%d) score=%d, (%d,%d) - (%d,%d)\n",i, score, minX, minY, maxX, maxY);
+  }
+#endif
 }
 
-// The name of this function is important for Arduino compatibility.
-void loop() {
-  exit(0);
-}

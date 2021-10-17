@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include <stdlib.h>
 #include <cstdio>
 #include "main_functions.h"
 
@@ -21,7 +22,8 @@ limitations under the License.
 // requirements for entry code (like an app_main function) should specialize
 // this main.cc file in a target-specific subfolder.
 int main(int argc, char* argv[]) {
-  setup();
+  int score_threshold = strtol(argv[3], NULL, 10);
+  setup(argv[1], argv[2], score_threshold);
   while (true) {
     loop();
   }

@@ -24,6 +24,8 @@ limitations under the License.
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 
+#define DEBUG0(fmt...) printf(fmt)
+
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -86,6 +88,18 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   if (output->type == kTfLiteFloat32) {
     switch (input->type) {
       case kTfLiteUInt8:
+#if 0
+		{
+			DEBUG0("dequantize input uint8, zero_point=%d, scale=%f, dump\n",
+				data->quantization_params.zero_point, data->quantization_params.scale);
+			const int flat_size =  MatchingFlatSize(tflite::micro::GetTensorShape(input),tflite::micro::GetTensorShape(output));
+			DEBUG0("flat_size=%d\n", flat_size);
+			const unsigned char *input_data = tflite::micro::GetTensorData<uint8_t>(input);
+			for (int i = 0; i < flat_size; i++) {
+				DEBUG0("input value uint8(%d)=%d\n", i, input_data[i]);
+			}
+		}
+#endif
         reference_ops::Dequantize(data->quantization_params,
                                   tflite::micro::GetTensorShape(input),
                                   tflite::micro::GetTensorData<uint8_t>(input),
@@ -93,6 +107,19 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                                   tflite::micro::GetTensorData<float>(output));
         break;
       case kTfLiteInt8:
+#if 0
+		{
+			DEBUG0("dequantize input int8, zero_point=%d, scale=%f, dump\n",
+				data->quantization_params.zero_point, data->quantization_params.scale);
+			const int flat_size =  MatchingFlatSize(tflite::micro::GetTensorShape(input),tflite::micro::GetTensorShape(output));
+			DEBUG0("flat_size=%d\n", flat_size);
+			const signed char *input_data = tflite::micro::GetTensorData<int8_t>(input);
+			for (int i = 0; i < flat_size; i++) {
+				DEBUG0("input value int8(%d)=%d\n", i, input_data[i]);
+			}
+		}
+#endif
+
         reference_ops::Dequantize(data->quantization_params,
                                   tflite::micro::GetTensorShape(input),
                                   tflite::micro::GetTensorData<int8_t>(input),

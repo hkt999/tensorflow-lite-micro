@@ -338,6 +338,21 @@ class MicroMutableOpResolver : public MicroOpResolver {
                       tflite::ops::micro::Register_RELU6(), ParseRelu6);
   }
 
+  TfLiteStatus AddLeakyRelu() {
+    return AddBuiltin(BuiltinOperator_LEAKY_RELU,
+                      tflite::ops::micro::Register_LEAKY_RELU(), ParseLeakyRelu);
+  }
+
+  TfLiteStatus AddResizeBilinear() {
+    return AddBuiltin(BuiltinOperator_RESIZE_BILINEAR,
+                      tflite::ops::micro::Register_RESIZE_BILINEAR(), ParseResizeBilinear);
+  }
+
+  TfLiteStatus AddExp() {
+    return AddBuiltin(BuiltinOperator_EXP,
+                      tflite::ops::micro::Register_EXP(), ParseExp);
+  }
+
   TfLiteStatus AddReshape() {
     return AddBuiltin(BuiltinOperator_RESHAPE,
                       tflite::ops::micro::Register_RESHAPE(), ParseReshape);

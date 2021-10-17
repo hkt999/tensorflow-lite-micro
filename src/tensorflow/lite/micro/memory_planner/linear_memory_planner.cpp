@@ -35,7 +35,9 @@ TfLiteStatus LinearMemoryPlanner::AddBuffer(
   return kTfLiteOk;
 }
 
-size_t LinearMemoryPlanner::GetMaximumMemorySize() { return next_free_offset_; }
+size_t LinearMemoryPlanner::GetMaximumMemorySize() { 
+	return next_free_offset_;
+}
 
 int LinearMemoryPlanner::GetBufferCount() { return current_buffer_count_; }
 

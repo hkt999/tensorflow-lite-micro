@@ -22,9 +22,6 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 
-//#define DEBUG0(fmt...) printf(fmt)
-#define DEBUG0(fmt...) (void(0))
-
 namespace tflite {
 namespace {
 
@@ -184,7 +181,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
         return kTfLiteError;
     }
   } else if (input->type == kTfLiteUInt8) {
-	  DEBUG0("UInt8 Quantize !\n");
 	  size_t size = ElementCount(*input->dims);
 	  switch (output->type) {
         case kTfLiteInt8:

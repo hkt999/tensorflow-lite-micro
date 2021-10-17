@@ -29,11 +29,19 @@ constexpr int kOutputTensor = 0;
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, kInputTensor);
   TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, kOutputTensor);
+  size_t input_elements = 1;
+  size_t output_elements = 1;
+  for (size_t i=0; i<input->dims->size; i++) {
+	  input_elements *= input->dims->data[i];
+  }
+  for (size_t i=0; i<output->dims->size; i++) {
+	  output_elements *= output->dims->data[i];
+  }
 
   switch (input->type) {
     case kTfLiteFloat32:
-      TF_LITE_ENSURE_EQ(context, input->dims->size, output->dims->size);
-	  reference_ops::Exp(tflite::micro::GetTensorData<float>(input), input->dims->size, tflite::micro::GetTensorData<float>(output));
+      TF_LITE_ENSURE_EQ(context, input_elements, output_elements);
+	  reference_ops::Exp(tflite::micro::GetTensorData<float>(input), input_elements, tflite::micro::GetTensorData<float>(output));
       break;
 
     default:

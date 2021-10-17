@@ -323,9 +323,7 @@ TfLiteStatus MicroInterpreter::AllocateTensors() {
                                                      &scratch_buffer_handles_));
   // TODO(b/16157777): Remove this when ContextHelper is rolled into this class.
   context_helper_.SetScratchBufferHandles(scratch_buffer_handles_);
-
   TF_LITE_ENSURE_STATUS(ResetVariableTensors());
-
   tensors_allocated_ = true;
   return kTfLiteOk;
 }
@@ -357,6 +355,7 @@ TfLiteStatus MicroInterpreter::Invoke() {
       ScopedOperatorProfile scoped_profiler(
           profiler, OpNameFromRegistration(registration), i);
 #endif
+	  //int start_tick = get_current_ticks();
       invoke_status = registration->invoke(&context_, node);
 
       // All TfLiteTensor structs used in the kernel are allocated from temp

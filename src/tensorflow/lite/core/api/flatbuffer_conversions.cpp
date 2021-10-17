@@ -26,8 +26,10 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
-namespace tflite {
+//#define DEBUG0(fmt...)	printf(fmt)
+#define DEBUG0(fmt...) ((void)0)
 
+namespace tflite {
 namespace {
 
 // Utility class for safely allocating POD data. This is useful for avoiding
@@ -116,6 +118,8 @@ TfLiteFusedActivation ConvertActivation(ActivationFunctionType activation) {
       return kTfLiteActTanh;
     case ActivationFunctionType_SIGN_BIT:
       return kTfLiteActSignBit;
+	case ActivationFunctionType_LEAKY_RELU:
+	  return KTfLiteActLeakyRelu;
   }
   return kTfLiteActNone;
 }
@@ -231,6 +235,10 @@ TfLiteStatus ParseOpDataTfLite(const Operator* op, BuiltinOperator op_type,
 
     case BuiltinOperator_L2_POOL_2D: {
       return ParsePool(op, error_reporter, allocator, builtin_data);
+    }
+
+    case BuiltinOperator_LEAKY_RELU: {
+      return ParseLeakyRelu(op, error_reporter, allocator, builtin_data);
     }
 
     case BuiltinOperator_LESS: {
@@ -785,6 +793,10 @@ TfLiteStatus ParseOpDataTfLite(const Operator* op, BuiltinOperator op_type,
       *builtin_data = params.release();
       return kTfLiteOk;
     }
+	case BuildinOperator_EXP: {
+      return ParseExp(op, error_report, allocator, builtin_data);
+    }
+
     // Below are the ops with no builtin_data structure.
     case BuiltinOperator_BATCH_TO_SPACE_ND:
     // TODO(aselle): Implement call in BuiltinOptions, but nullptrs are
@@ -1100,6 +1112,15 @@ TfLiteStatus ParseEqual(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
 // We have this parse function instead of directly returning kTfLiteOk from the
 // switch-case in ParseOpData because this function is used as part of the
 // selective registration for the OpResolver implementation in micro.
+TfLiteStatus ParseExp(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
+                        void**) {
+  DEBUG0("%s (%d) %s (DONE)\n", __FILE__, __LINE__, __FUNCTION__);
+  return kTfLiteOk;
+}
+
+// We have this parse function instead of directly returning kTfLiteOk from the
+// switch-case in ParseOpData because this function is used as part of the
+// selective registration for the OpResolver implementation in micro.
 TfLiteStatus ParseFill(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
                        void**) {
   return kTfLiteOk;
@@ -1209,6 +1230,27 @@ TfLiteStatus ParseL2Normalization(const Operator* op,
   *builtin_data = params.release();
   return kTfLiteOk;
 }
+
+// We have this parse function instead of directly returning kTfLiteOk from the
+// switch-case in ParseOpData because this function is used as part of the
+// selective registration for the OpResolver implementation in micro.
+TfLiteStatus ParseLeakyRelu(const Operator* op, ErrorReporter* error_reporter, BuiltinDataAllocator* allocator,
+                        void** builtin_data) {
+
+  DEBUG0("%s (%d) %s (DONE)\n", __FILE__, __LINE__, __FUNCTION__);
+  CheckParsePointerParams(op, error_reporter, allocator, builtin_data);
+
+  SafeBuiltinDataAllocator safe_allocator(allocator);
+  auto params = safe_allocator.Allocate<TfLiteLeakyReluParams>();
+  TF_LITE_ENSURE(error_reporter, params != nullptr);
+  if (const auto* leaky_relu_params =
+          op->builtin_options_as_LeakyReluOptions()) {
+    params->alpha = leaky_relu_params->alpha();
+  }
+  *builtin_data = params.release();
+  return kTfLiteOk;
+}
+
 
 // We have this parse function instead of directly returning kTfLiteOk from the
 // switch-case in ParseOpData because this function is used as part of the
@@ -1454,6 +1496,8 @@ TfLiteStatus ParseRelu6(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
 TfLiteStatus ParseReshape(const Operator* op, ErrorReporter* error_reporter,
                           BuiltinDataAllocator* allocator,
                           void** builtin_data) {
+
+  DEBUG0("%s (%d) %s (DONE)\n", __FILE__, __LINE__, __FUNCTION__);
   CheckParsePointerParams(op, error_reporter, allocator, builtin_data);
 
   SafeBuiltinDataAllocator safe_allocator(allocator);
@@ -1472,16 +1516,19 @@ TfLiteStatus ParseReshape(const Operator* op, ErrorReporter* error_reporter,
           FlatBufferIntVectorToArray(sizeof(params->shape), new_shape,
                                      params->shape, error_reporter, "reshape"));
       params->num_dimensions = new_shape->size();
+	  DEBUG0("**** params->num_dimensions=%d\n", params->num_dimensions);
     } else {
       // TODO(b/157480169) TODO(b/147203660): We should either return
       // kTfLiteError or fill in some reasonable defaults in the params struct.
       // We are not doing so until we better undertand the ramifications of
       // changing the legacy behavior.
+	  DEBUG0("parse_reshape **** todo #1\n");
     }
   } else {
     // TODO(b/157480169): We should either return kTfLiteError or fill in some
     // reasonable defaults in the params struct. We are not doing so until we
     // better undertand the ramifications of changing the legacy behavior.
+	  DEBUG0("parse_reshap **** todo #2, this could be the cause for extendible reshape size\n");
   }
 
   *builtin_data = params.release();

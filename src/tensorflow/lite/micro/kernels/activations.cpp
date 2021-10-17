@@ -47,10 +47,10 @@ struct Relu6OpData {
 
 struct LeakyReluOpData {
   int32_t output_multiplier_alpha;
-  int32_t output_shift_alpha;
+  int output_shift_alpha;
   int32_t output_multiplier_identity;
-  int32_t output_shift_identity;
-}; 
+  int output_shift_identity;
+};
 } // namespace
 
 constexpr int kInputTensor = 0;

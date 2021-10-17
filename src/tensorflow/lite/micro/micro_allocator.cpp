@@ -336,6 +336,20 @@ TfLiteStatus AllocationInfoBuilder::AddScratchBuffers(
   return kTfLiteOk;
 }
 
+#if 0
+static void DumpAllocationInfo(const char *title, int i, const AllocationInfo *info)
+{
+  DEBUG0("AllocationInfo [%s] (%d): %p\n", title, i, info);
+  DEBUG0("  info->bytes=%ld\n", info->bytes);
+  DEBUG0("  input->output_ptr=%p\n", info->output_ptr);
+  DEBUG0("  input->first_created=%d\n", info->first_created);
+  DEBUG0("  input->last_used=%d\n", info->last_used);
+  DEBUG0("  input->offline_offset=%d\n", info->offline_offset);
+  DEBUG0("  input->needs_allocatiing=%s\n", info->needs_allocating ? "true" : "false");
+}
+#endif
+
+
 TfLiteStatus CreatePlan(ErrorReporter* error_reporter,
                         GreedyMemoryPlanner* planner,
                         const AllocationInfo* allocation_info,
@@ -359,6 +373,7 @@ TfLiteStatus CreatePlan(ErrorReporter* error_reporter,
   }
   return kTfLiteOk;
 }
+
 
 TfLiteStatus CommitPlan(ErrorReporter* error_reporter, MemoryPlanner* planner,
                         uint8_t* starting_point,
@@ -666,10 +681,11 @@ TfLiteStatus MicroAllocator::FinishModelAllocation(
 
   TF_LITE_ENSURE_STATUS(AllocateScratchBufferHandles(
       scratch_buffer_handles, scratch_buffer_request_count_));
+
   TF_LITE_ENSURE_STATUS(CommitStaticMemoryPlan(model, subgraph, eval_tensors,
                                                *scratch_buffer_handles));
-  TF_LITE_ENSURE_STATUS(AllocateVariables(subgraph, eval_tensors));
 
+  TF_LITE_ENSURE_STATUS(AllocateVariables(subgraph, eval_tensors));
   model_is_allocating_ = false;
   return kTfLiteOk;
 }
@@ -1024,7 +1040,8 @@ const SubGraph* MicroAllocator::GetSubGraphFromModel(const Model* model) {
 TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
     const Model* model, const SubGraph* subgraph,
     TfLiteEvalTensor* eval_tensors,
-    ScratchBufferHandle* scratch_buffer_handles) {
+    ScratchBufferHandle* scratch_buffer_handles)
+{
   size_t head_usage = 0;
   // Create static memory plan
   // 1. Calculate AllocationInfo to know the lifetime of each tensor/buffer.
@@ -1062,7 +1079,6 @@ TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
       builder.GetOfflinePlannedOffsets(model, &offline_planner_offsets));
   TF_LITE_ENSURE_STATUS(
       builder.AddTensors(subgraph, offline_planner_offsets, eval_tensors));
-
   internal::ScratchBufferRequest* scratch_buffer_requests =
       GetScratchBufferRequests();
 
@@ -1075,6 +1091,7 @@ TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
   uint8_t* planner_arena =
       memory_allocator_->AllocateTemp(remaining_arena_size, kBufferAlignment);
   TF_LITE_ENSURE(error_reporter_, planner_arena != nullptr);
+
   GreedyMemoryPlanner planner(planner_arena, remaining_arena_size);
   TF_LITE_ENSURE_STATUS(CreatePlan(error_reporter_, &planner, allocation_info,
                                    allocation_info_count));
@@ -1098,6 +1115,7 @@ TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
   TF_LITE_ENSURE_STATUS(CommitPlan(error_reporter_, &planner,
                                    memory_allocator_->GetHeadBuffer(),
                                    allocation_info, allocation_info_count));
+
   head_usage = planner.GetMaximumMemorySize();
 
   // The head is used to store memory plans for one model at a time during the

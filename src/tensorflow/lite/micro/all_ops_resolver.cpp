@@ -60,6 +60,9 @@ AllOpsResolver::AllOpsResolver() {
   AddReduceMax();
   AddRelu();
   AddRelu6();
+  AddLeakyRelu();
+  AddExp();
+  AddResizeBilinear();
   AddReshape();
   AddResizeNearestNeighbor();
   AddRound();

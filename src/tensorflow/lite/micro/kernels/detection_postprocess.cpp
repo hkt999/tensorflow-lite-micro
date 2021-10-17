@@ -26,6 +26,34 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 
+#define DEBUG
+
+#ifdef DEBUG
+#define DEBUG0(fmt...)	printf(fmt)
+
+#define _kOutputTensorDetectionBoxes	0
+#define _kOutputTensorDetectionClasses	1
+#define _kOutputTensorDetectionScores	2
+#define _kOutputTensorNumDetections		3
+static TfLiteContext *__c = 0;
+static TfLiteNode *__n = 0;
+void PPDump()
+{
+#if 0
+  void* detection_boxes = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionBoxes)->data.raw;
+  void* detection_classes = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionClasses)->data.raw;
+  void* detection_scores = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionScores)->data.raw;
+  void* num_detections = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorNumDetections)->data.raw;
+  DEBUG0("[PP_DUMP]   detection_boxes addr = %p\n", detection_boxes);
+  DEBUG0("[PP_DUMP] detection_classes addr = %p\n", detection_classes);
+  DEBUG0("[PP_DUMP]  detection_scores addr = %p\n", detection_scores);
+  DEBUG0("[PP_DUMP]    num_detections addr = %p\n", num_detections);
+#endif
+}
+#else
+#define DEBUG0(fmt...) (void(0))
+#endif
+
 namespace tflite {
 namespace {
 
@@ -145,13 +173,38 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->scale_values.h = m["h_scale"].AsFloat();
   op_data->scale_values.w = m["w_scale"].AsFloat();
 
+#if 0
+  DEBUG0("PostProcess INIT\n");
+  DEBUG0("  max_detections: %d\n", op_data->max_detections);
+  DEBUG0("  max_classes_per_detection: %d\n", op_data->max_classes_per_detection);
+  DEBUG0("  detections_per_class: %d\n", op_data->detections_per_class);
+  DEBUG0("  use_regular_non_max_suppression: %d\n", op_data->use_regular_non_max_suppression);
+  DEBUG0("  nms -> non_max_suppression_score_threshold: %f\n", op_data->non_max_suppression_score_threshold);
+  DEBUG0("  intersection_over_union_threshold: %f\n", op_data->intersection_over_union_threshold);
+  DEBUG0("  nms_iou_threshold: %f\n", op_data->intersection_over_union_threshold);
+  DEBUG0("  num_classes: %d\n", op_data->num_classes);
+  DEBUG0("    y_scale: %f\n", op_data->scale_values.y);
+  DEBUG0("    x_scale: %f\n", op_data->scale_values.x);
+  DEBUG0("    h_scale: %f\n", op_data->scale_values.h);
+  DEBUG0("    v_scale: %f\n", op_data->scale_values.w);
+#endif
+
   return op_data;
 }
 
-void Free(TfLiteContext* context, void* buffer) {}
+void Free(TfLiteContext* context, void* buffer)
+{
+  DEBUG0("detection_postprocess (%s) not supported\n", __FUNCTION__);
+}
+
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = static_cast<OpData*>(node->user_data);
+
+#ifdef DEBUG
+  __c = context;
+  __n = node;
+#endif
 
   // Inputs: box_encodings, scores, anchors
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
@@ -169,22 +222,29 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const int num_boxes = input_box_encodings->dims->data[1];
   const int num_classes = op_data->num_classes;
 
+  //DEBUG0("[PREPARE] num_boxes=%d, num_classes=%d\n", num_boxes, num_classes);
   op_data->input_box_encodings.scale = input_box_encodings->params.scale;
-  op_data->input_box_encodings.zero_point =
-      input_box_encodings->params.zero_point;
-  op_data->input_class_predictions.scale =
-      input_class_predictions->params.scale;
-  op_data->input_class_predictions.zero_point =
-      input_class_predictions->params.zero_point;
+  op_data->input_box_encodings.zero_point = input_box_encodings->params.zero_point;
+  op_data->input_class_predictions.scale = input_class_predictions->params.scale;
+  op_data->input_class_predictions.zero_point = input_class_predictions->params.zero_point;
   op_data->input_anchors.scale = input_anchors->params.scale;
   op_data->input_anchors.zero_point = input_anchors->params.zero_point;
 
   // Scratch tensors
+  //DEBUG0("[PREPARE] kNumCoordBox=%d\n", kNumCoordBox);
   context->RequestScratchBufferInArena(context, num_boxes,
                                        &op_data->active_candidate_idx);
   context->RequestScratchBufferInArena(context,
                                        num_boxes * kNumCoordBox * sizeof(float),
                                        &op_data->decoded_boxes_idx);
+#if 0
+  DEBUG0("[PREPARE] prediction dim->data[0]=%d, dim->data[1]=%d, dim->data[2]=%d, requeseted size = %ld\n",
+	  input_class_predictions->dims->data[0],
+      input_class_predictions->dims->data[1],
+      input_class_predictions->dims->data[2],
+      input_class_predictions->dims->data[1] * input_class_predictions->dims->data[2]*sizeof(float));
+#endif
+
   context->RequestScratchBufferInArena(
       context,
       input_class_predictions->dims->data[1] *
@@ -196,12 +256,21 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
                                        &op_data->score_buffer_idx);
   context->RequestScratchBufferInArena(context, num_boxes * sizeof(float),
                                        &op_data->keep_scores_idx);
+
   context->RequestScratchBufferInArena(
       context, op_data->max_detections * num_boxes * sizeof(float),
       &op_data->scores_after_regular_non_max_suppression_idx);
+
+#if 0
+  DEBUG0("[PREPARE] op_data->max_detections = %d\n", op_data->max_detections);
+  DEBUG0("[PREPARE] num_boxes = %d\n", num_boxes);
+  DEBUG0("[PREPARE] allocate detection box size=%ld\n", op_data->max_detections * num_boxes * sizeof(float));
+#endif
+
   context->RequestScratchBufferInArena(
       context, op_data->max_detections * num_boxes * sizeof(float),
       &op_data->sorted_values_idx);
+
   context->RequestScratchBufferInArena(context, num_boxes * sizeof(int),
                                        &op_data->keep_indices_idx);
   context->RequestScratchBufferInArena(
@@ -214,9 +283,12 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   context->RequestScratchBufferInArena(
       context, buffer_size * num_boxes * sizeof(int), &op_data->selected_idx);
 
-  // Outputs: detection_boxes, detection_scores, detection_classes,
-  // num_detections
+  // Outputs: detection_boxes, detection_scores, detection_classes, num_detections
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 4);
+
+#ifdef DEBUG
+  PPDump();
+#endif
 
   return kTfLiteOk;
 }
@@ -276,14 +348,17 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext* context, TfLiteNode* node,
   const TfLiteEvalTensor* input_anchors =
       tflite::micro::GetEvalInput(context, node, kInputTensorAnchors);
 
+  DEBUG0("DecodeCenterSizeBoxes num_boxes=%d, input_box_encodings->type=%d\n", num_boxes, input_box_encodings->type);
   // Decode the boxes to get (ymin, xmin, ymax, xmax) based on the anchors
   CenterSizeEncoding box_centersize;
   CenterSizeEncoding scale_values = op_data->scale_values;
   CenterSizeEncoding anchor;
+
   for (int idx = 0; idx < num_boxes; ++idx) {
     switch (input_box_encodings->type) {
         // Quantized
       case kTfLiteUInt8:
+		//DEBUG0("type: kTfLiteUInt8\n");
         DequantizeBoxEncodings(
             input_box_encodings, idx,
             static_cast<float>(op_data->input_box_encodings.zero_point),
@@ -297,10 +372,13 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext* context, TfLiteNode* node,
         break;
         // Float
       case kTfLiteFloat32: {
+		//DEBUG0("type: kTfLiteFloat32\n");
         // Please see DequantizeBoxEncodings function for the support detail.
         const int box_encoding_idx = idx * input_box_encodings->dims->data[2];
+		//DEBUG0("box_encoding_idx=%d\n", box_encoding_idx);
         const float* boxes = &(tflite::micro::GetTensorData<float>(
             input_box_encodings)[box_encoding_idx]);
+		//DEBUG0("b0(%f), b1(%f), b2(%f), b3(%f)\n", boxes[0], boxes[1], boxes[2], boxes[3]);
         box_centersize = *reinterpret_cast<const CenterSizeEncoding*>(boxes);
         anchor =
             ReInterpretTensor<const CenterSizeEncoding*>(input_anchors)[idx];
@@ -313,13 +391,10 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext* context, TfLiteNode* node,
 
     float ycenter = box_centersize.y / scale_values.y * anchor.h + anchor.y;
     float xcenter = box_centersize.x / scale_values.x * anchor.w + anchor.x;
-    float half_h =
-        0.5f * static_cast<float>(std::exp(box_centersize.h / scale_values.h)) *
-        anchor.h;
-    float half_w =
-        0.5f * static_cast<float>(std::exp(box_centersize.w / scale_values.w)) *
-        anchor.w;
+    float half_h = 0.5f * static_cast<float>(std::exp(box_centersize.h / scale_values.h)) * anchor.h;
+    float half_w = 0.5f * static_cast<float>(std::exp(box_centersize.w / scale_values.w)) * anchor.w;
 
+	//DEBUG0("idx(%d) center=(%f, %f), w=%f, h=%f\n", idx, xcenter, ycenter, half_w * 2.0, half_h * 2.0);
     float* decoded_boxes = reinterpret_cast<float*>(
         context->GetScratchBuffer(context, op_data->decoded_boxes_idx));
     auto& box = reinterpret_cast<BoxCornerEncoding*>(decoded_boxes)[idx];
@@ -327,6 +402,7 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext* context, TfLiteNode* node,
     box.xmin = xcenter - half_w;
     box.ymax = ycenter + half_h;
     box.xmax = xcenter + half_w;
+	//DEBUG0("box.xmin(%f), box.ymin(%f), box.xmax(%f), box.ymax(%f)\n", box.xmin, box.ymin, box.xmax, box.ymax);
   }
   return kTfLiteOk;
 }
@@ -353,6 +429,8 @@ int SelectDetectionsAboveScoreThreshold(const float* values, int size,
 }
 
 bool ValidateBoxes(const float* decoded_boxes, const int num_boxes) {
+  DEBUG0("%s (%d) %s\n", __FUNCTION__, __LINE__, __FILE__);
+  DEBUG0("num_boxes=%d\n", num_boxes);
   for (int i = 0; i < num_boxes; ++i) {
     // ymax>=ymin, xmax>=xmin
     auto& box = reinterpret_cast<const BoxCornerEncoding*>(decoded_boxes)[i];
@@ -390,6 +468,8 @@ TfLiteStatus NonMaxSuppressionSingleClassHelper(
     TfLiteContext* context, TfLiteNode* node, OpData* op_data,
     const float* scores, int* selected, int* selected_size,
     int max_detections) {
+
+  DEBUG0("%s (%d) %s\n", __FUNCTION__, __LINE__, __FILE__);
   const TfLiteEvalTensor* input_box_encodings =
       tflite::micro::GetEvalInput(context, node, kInputTensorBoxEncodings);
   const int num_boxes = input_box_encodings->dims->data[1];
@@ -488,8 +568,7 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext* context,
   const int num_classes = op_data->num_classes;
   const int num_detections_per_class = op_data->detections_per_class;
   const int max_detections = op_data->max_detections;
-  const int num_classes_with_background =
-      input_class_predictions->dims->data[2];
+  const int num_classes_with_background = input_class_predictions->dims->data[2];
   // The row index offset is 1 if background class is included and 0 otherwise.
   int label_offset = num_classes_with_background - num_classes;
   TF_LITE_ENSURE(context, num_detections_per_class > 0);
@@ -610,7 +689,6 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
       tflite::micro::GetEvalInput(context, node, kInputTensorClassPredictions);
   TfLiteEvalTensor* detection_boxes =
       tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionBoxes);
-
   TfLiteEvalTensor* detection_classes = tflite::micro::GetEvalOutput(
       context, node, kOutputTensorDetectionClasses);
   TfLiteEvalTensor* detection_scores =
@@ -624,6 +702,14 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
   const int num_classes_with_background =
       input_class_predictions->dims->data[2];
 
+  DEBUG0("%s (%d) %s\n", __FUNCTION__, __LINE__, __FILE__);
+#if 0
+  DEBUG0("num_boxes=%d\n", num_boxes);
+  DEBUG0("num_classes=%d\n", num_classes);
+  TfLiteEvalTensor* ttt = tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionBoxes);
+  DEBUG0("* pointer -- detection_classes pointer=%p\n", ttt->dims->data);
+#endif
+
   // The row index offset is 1 if background class is included and 0 otherwise.
   int label_offset = num_classes_with_background - num_classes;
   TF_LITE_ENSURE(context, (max_categories_per_anchor > 0));
@@ -634,6 +720,7 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
   int* sorted_class_indices = reinterpret_cast<int*>(
       context->GetScratchBuffer(context, op_data->buffer_idx));
 
+  DEBUG0("[EVAL] max_scores = %p\n", max_scores);
   for (int row = 0; row < num_boxes; row++) {
     const float* box_scores =
         scores + row * num_classes_with_background + label_offset;
@@ -641,12 +728,14 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
     DecreasingPartialArgSort(box_scores, num_classes, num_categories_per_anchor,
                              class_indices);
     max_scores[row] = box_scores[class_indices[0]];
+	//DEBUG0("max_scores[%d] = %f\n", row, max_scores[row]);
   }
 
   // Perform non-maximal suppression on max scores
   int selected_size = 0;
   int* selected = reinterpret_cast<int*>(
       context->GetScratchBuffer(context, op_data->selected_idx));
+
   TF_LITE_ENSURE_STATUS(NonMaxSuppressionSingleClassHelper(
       context, node, op_data, max_scores, selected, &selected_size,
       op_data->max_detections));
@@ -654,7 +743,9 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
   // Allocate output tensors
   int output_box_index = 0;
 
+  DEBUG0("selected_size=%d\n", selected_size);
   for (int i = 0; i < selected_size; i++) {
+  	DEBUG0("i(%d) of selected_size=%d\n", i, selected_size);
     int selected_index = selected[i];
 
     const float* box_scores =
@@ -664,12 +755,22 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
 
     for (int col = 0; col < num_categories_per_anchor; ++col) {
       int box_offset = num_categories_per_anchor * output_box_index + col;
+	  DEBUG0("col=%d, box_offset=%d\n", col, box_offset);
 
       // detection_boxes
       float* decoded_boxes = reinterpret_cast<float*>(
           context->GetScratchBuffer(context, op_data->decoded_boxes_idx));
+
       ReInterpretTensor<BoxCornerEncoding*>(detection_boxes)[box_offset] =
           reinterpret_cast<BoxCornerEncoding*>(decoded_boxes)[selected_index];
+
+	  float *_class = tflite::micro::GetTensorData<float>(detection_classes);
+	  float *_score = tflite::micro::GetTensorData<float>(detection_scores);
+
+	  DEBUG0("detect addr = %p\n",  tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionBoxes)->data.raw);
+	  DEBUG0(" score addr = %p (yes, the address is for score -- output2)\n", _score);
+	  DEBUG0(" class addr = %p (yes, the address is for class -- output1)\n", _class);
+      DEBUG0("  box0 addr = %p (yes, the address is for bounding box -- output0)\n", ReInterpretTensor<BoxCornerEncoding*>(detection_boxes));
 
       // detection_classes
       tflite::micro::GetTensorData<float>(detection_classes)[box_offset] =
@@ -679,9 +780,38 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext* context,
       tflite::micro::GetTensorData<float>(detection_scores)[box_offset] =
           box_scores[class_indices[col]];
 
+#if 0
+	  BoxCornerEncoding b = ReInterpretTensor<BoxCornerEncoding*>(detection_boxes)[box_offset];
+	  DEBUG0("loop box_offset=%d, class=%d, score=%f (%f,%f)-(%f,%f) * (%d,%d)-(%d,%d)\n", box_offset,
+			class_indices[col], box_scores[class_indices[col]],
+			b.xmin, b.ymin, b.xmax, b.ymax,
+			(int)(300*b.xmin), (int)(300*b.ymin), (int)(300*b.xmax), (int)(300*b.ymax));
+#endif
+
+#if 0
+	  DEBUG0("local verification (i=%d, col=%d/%d, selected_size=%d)\n",
+			  i+1, col, num_categories_per_anchor, selected_size);
+	  for (int loop=0; loop<selected_size; loop++) {
+		  BoxCornerEncoding b = ReInterpretTensor<BoxCornerEncoding*>(detection_boxes)[loop];
+		  DEBUG0("offset=%d, class=%d, score=%d, (%f,%f)-(%f,%f) * (%d,%d)-(%d,%d)\n", loop, (int)_class[loop], (int)(100 * _score[loop]),
+				b.xmin, b.ymin, b.xmax, b.ymax,
+				(int)(300*b.xmin), (int)(300*b.ymin), (int)(300*b.xmax), (int)(300*b.ymax));
+	  }
+#endif
+
       output_box_index++;
     }
   }
+
+#if 0
+  DEBUG0("Verification\n");
+  for (int i=0; i<selected_size; i++) {
+	  BoxCornerEncoding b = ReInterpretTensor<BoxCornerEncoding*>(detection_boxes)[i];
+	  DEBUG0("loop box_offset=%d, (%f,%f)-(%f,%f) * (%d,%d)-(%d,%d)\n", i,
+			b.xmin, b.ymin, b.xmax, b.ymax,
+			(int)(300*b.xmin), (int)(300*b.ymin), (int)(300*b.xmax), (int)(300*b.ymax));
+  }
+#endif
 
   tflite::micro::GetTensorData<float>(num_detections)[0] = output_box_index;
   return kTfLiteOk;
@@ -741,9 +871,11 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext* context,
   }
 
   if (op_data->use_regular_non_max_suppression) {
+	//DEBUG0("op_data->user_regular_non_max_suppression\n");
     TF_LITE_ENSURE_STATUS(NonMaxSuppressionMultiClassRegularHelper(
         context, node, op_data, scores));
   } else {
+	//DEBUG0("NOT op_data->user_regular_non_max_suppression\n");
     TF_LITE_ENSURE_STATUS(
         NonMaxSuppressionMultiClassFastHelper(context, node, op_data, scores));
   }
@@ -752,6 +884,17 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext* context,
 }
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+
+  void* detection_boxes = tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionBoxes)->data.raw;
+  void* detection_classes = tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionClasses)->data.raw;
+  void* detection_scores = tflite::micro::GetEvalOutput(context, node, kOutputTensorDetectionScores)->data.raw;
+  void* num_detections = tflite::micro::GetEvalOutput(context, node, kOutputTensorNumDetections)->data.raw;
+  DEBUG0("[EVAL]   detection_boxes addr = %p\n", detection_boxes);
+  DEBUG0("[EVAL] detection_classes addr = %p\n", detection_classes);
+  DEBUG0("[EVAL]  detection_scores addr = %p\n", detection_scores);
+  DEBUG0("[EVAL]    num_detections addr = %p\n", num_detections);
+
+
   TF_LITE_ENSURE(context, (kBatchSize == 1));
   auto* op_data = static_cast<OpData*>(node->user_data);
 
@@ -774,6 +917,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   return kTfLiteOk;
 }
+
 }  // namespace
 
 TfLiteRegistration* Register_DETECTION_POSTPROCESS() {

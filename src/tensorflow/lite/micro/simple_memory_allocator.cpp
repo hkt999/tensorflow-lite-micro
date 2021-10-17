@@ -99,6 +99,7 @@ uint8_t* SimpleMemoryAllocator::AllocateFromTail(size_t size,
     return nullptr;
   }
   tail_ = aligned_result;
+
   return aligned_result;
 }
 

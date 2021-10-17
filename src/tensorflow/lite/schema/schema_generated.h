@@ -2774,30 +2774,33 @@ enum ActivationFunctionType {
   ActivationFunctionType_RELU6 = 3,
   ActivationFunctionType_TANH = 4,
   ActivationFunctionType_SIGN_BIT = 5,
+  ActivationFunctionType_LEAKY_RELU = 6,
   ActivationFunctionType_MIN = ActivationFunctionType_NONE,
   ActivationFunctionType_MAX = ActivationFunctionType_SIGN_BIT
 };
 
-inline const ActivationFunctionType (&EnumValuesActivationFunctionType())[6] {
+inline const ActivationFunctionType (&EnumValuesActivationFunctionType())[7] {
   static const ActivationFunctionType values[] = {
     ActivationFunctionType_NONE,
     ActivationFunctionType_RELU,
     ActivationFunctionType_RELU_N1_TO_1,
     ActivationFunctionType_RELU6,
     ActivationFunctionType_TANH,
-    ActivationFunctionType_SIGN_BIT
+    ActivationFunctionType_SIGN_BIT,
+	ActivationFunctionType_LEAKY_RELU
   };
   return values;
 }
 
 inline const char * const *EnumNamesActivationFunctionType() {
-  static const char * const names[7] = {
+  static const char * const names[8] = {
     "NONE",
     "RELU",
     "RELU_N1_TO_1",
     "RELU6",
     "TANH",
     "SIGN_BIT",
+	"LEAKY_RELU",
     nullptr
   };
   return names;

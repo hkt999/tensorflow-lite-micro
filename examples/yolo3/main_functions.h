@@ -21,14 +21,20 @@ limitations under the License.
 extern "C" {
 #endif
 
+typedef struct m_info_s {
+	int color_depth;
+	int width;
+	int height;
+	int bytes;
+} m_info_t;
 // Initializes all data needed for the example. The name is important, and needs
 // to be setup() for Arduino compatibility.
-void setup(char *model_filename, char *jpeg_filename, int score_threshold);
+void setup(char *model_filename, m_info_t *info);
 
 // Runs one iteration of data gathering and inference. This should be called
 // repeatedly from the application code. The name needs to be loop() for Arduino
 // compatibility.
-void loop();
+void detect(unsigned char *image);
 
 #ifdef __cplusplus
 }

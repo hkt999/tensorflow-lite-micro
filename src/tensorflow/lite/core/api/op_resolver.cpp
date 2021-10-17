@@ -43,8 +43,9 @@ TfLiteStatus GetRegistrationFromOpCode(
     if (*registration == nullptr) {
       TF_LITE_REPORT_ERROR(
           error_reporter,
-          "Didn't find op for builtin opcode '%s' version '%d'\n",
-          EnumNameBuiltinOperator(builtin_code), version);
+          "Didn't find op for builtin opcode (%d)'%s' version '%d'\n",
+          builtin_code, EnumNameBuiltinOperator(builtin_code), version);
+
       status = kTfLiteError;
     }
   } else if (!opcode->custom_code()) {

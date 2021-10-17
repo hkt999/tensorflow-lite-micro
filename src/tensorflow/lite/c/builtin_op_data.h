@@ -72,6 +72,7 @@ typedef enum {
   kTfLiteActTanh,
   kTfLiteActSignBit,
   kTfLiteActSigmoid,
+  KTfLiteActLeakyRelu,
 } TfLiteFusedActivation;
 
 typedef struct {

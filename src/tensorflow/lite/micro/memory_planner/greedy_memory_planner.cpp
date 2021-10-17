@@ -67,11 +67,13 @@ GreedyMemoryPlanner::~GreedyMemoryPlanner() {
 TfLiteStatus GreedyMemoryPlanner::AddBuffer(
     tflite::ErrorReporter* error_reporter, int size, int first_time_used,
     int last_time_used) {
+
   if (buffer_count_ >= max_buffer_count_) {
     TF_LITE_REPORT_ERROR(error_reporter, "Too many buffers (max is %d)",
                          max_buffer_count_);
     return kTfLiteError;
   }
+
   BufferRequirements* current = &requirements_[buffer_count_];
   current->size = size;
   current->first_time_used = first_time_used;
@@ -297,6 +299,7 @@ size_t GreedyMemoryPlanner::GetMaximumMemorySize() {
   while (entry) {
     BufferRequirements* requirements =
         &requirements_[entry->requirements_index];
+
     // TODO(b/148246793): Update all size and offset variables types from
     //                    int to size_t
     const size_t current_size = entry->offset + requirements->size;

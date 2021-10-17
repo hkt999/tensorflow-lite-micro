@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.12)
 set(CMAKE_C_COMPILER_WORKS 1)
 set(CMAKE_CXX_COMPILER_WORKS 1)
+#set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+#set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 
 project(tensorflow-lite C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_BUILD_TYPE DEBUG)
+set(CMAKE_BUILD_TYPE RELEASE)
 set(CMAKE_CXX_FLAGS "-fno-rtti -fno-threadsafe-statics")
+#set(CMAKE_CXX_FLAGS "-fexceptions")
 
 add_library(
   tensorflow-lite 
@@ -46,6 +49,7 @@ add_library(
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/logistic.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/maximum_minimum.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/neg.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/exp.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/pack.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/pad.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/prelu.cpp
@@ -53,6 +57,7 @@ add_library(
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/reduce.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/reshape.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/resize_bilinear.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/round.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/shape.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/tensorflow/lite/micro/kernels/split.cpp
@@ -319,7 +324,7 @@ target_compile_definitions(
 target_compile_options(
   tensorflow-lite
   PUBLIC
-  -fno-exceptions
+  #  -fno-exceptions
 )
 
 target_link_libraries(
@@ -351,16 +356,34 @@ target_include_directories(tensorflow-lite-test
 target_compile_definitions(
   tensorflow-lite-test
   PUBLIC
-  #COMPILE_DEFINITIONS TF_LITE_DISABLE_X86_NEON=1
+  COMPILE_DEFINITIONS TF_LITE_DISABLE_X86_NEON=1
   COMPILE_DEFINITIONS TF_LITE_STATIC_MEMORY=1
   COMPILE_DEFINITIONS CMSIS_NN=1
 )
 
-target_compile_options(
-  tensorflow-lite-test
-  PUBLIC
-  -fno-exceptions
-)
+#target_compile_options(
+#  tensorflow-lite-test
+#  PUBLIC
+#  -fno-exceptions
+#  -nostdlib
+#  -mthumb
+#  -march=armv8-m.main+dsp
+#  -mcmse
+#  -mfloat-abi=softfp
+#  -mfpu=fpv5-sp-d16
+#)
+
+#target_compile_options(
+#  tensorflow-lite
+#  PUBLIC
+#  -fno-exceptions
+#  -nostdlib
+#  -mthumb
+#  -march=armv8-m.main+dsp
+#  -mcmse
+#  -mfloat-abi=softfp
+#  -mfpu=fpv5-sp-d16
+#)
 
 target_link_libraries(
   tensorflow-lite-test
@@ -400,6 +423,7 @@ add_subdirectory("tests/kernel_pooling_test")
 add_subdirectory("tests/kernel_prelu_test")
 add_subdirectory("tests/kernel_quantization_util_test")
 add_subdirectory("tests/kernel_quantize_test")
+#add_subdirectory("tests/kernel_exp_test")
 add_subdirectory("tests/kernel_reduce_test")
 add_subdirectory("tests/kernel_reshape_test")
 add_subdirectory("tests/kernel_resize_nearest_neighbor_test")
