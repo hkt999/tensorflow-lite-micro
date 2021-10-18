@@ -51,12 +51,4 @@ BuiltinOperator GetBuiltinCode(const OperatorCode* op_code) {
       static_cast<BuiltinOperator>(op_code->deprecated_builtin_code()));
 }
 
-BuiltinOperator GetBuiltinCode(const OperatorCodeT* op_code) {
-  // Caller should guarantee that the given argument value is not a nullptr.
-  TFLITE_DCHECK(op_code != nullptr);
-
-  return std::max(op_code->builtin_code, static_cast<BuiltinOperator>(
-                                             op_code->deprecated_builtin_code));
-}
-
 }  // namespace tflite

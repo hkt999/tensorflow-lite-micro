@@ -510,6 +510,7 @@ enum ActivationFunctionType : byte {
   RELU6 = 3,
   TANH = 4,
   SIGN_BIT = 5,
+  LEAKY_RELU = 6,
 }
 
 table Conv2DOptions {
