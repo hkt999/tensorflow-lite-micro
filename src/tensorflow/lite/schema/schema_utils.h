@@ -26,8 +26,6 @@ namespace tflite {
 // details.
 BuiltinOperator GetBuiltinCode(const OperatorCode *op_code);
 
-BuiltinOperator GetBuiltinCode(const OperatorCodeT *op_code);
-
 }  // namespace tflite
 
 #endif  // TENSORFLOW_LITE_SCHEMA_SCHEMA_UTILS_H_
