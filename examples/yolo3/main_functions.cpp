@@ -79,7 +79,7 @@ static void dump_tensor(const char *name, TfLiteTensor *tensor)
   }
 }
 
-void setup(char *model_filename, m_info_t *info) 
+int setup(char *model_filename, m_info_t *info) 
 {
   // Set up logging. Google style is to avoid globals or statics because of
   // lifetime uncertainty, but since this has a trivial destructor it's okay.
@@ -90,13 +90,13 @@ void setup(char *model_filename, m_info_t *info)
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
   //model = tflite::GetModel(lite_model_ssd_mobilenet_v1_1_metadata_2_tflite);
-  model = tflite::GetModel( read_model(model_filename));
+  model = tflite::GetModel(read_model(model_filename));
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Model provided is schema version %d not equal "
                          "to supported version %d.",
                          model->version(), TFLITE_SCHEMA_VERSION);
-    return;
+    return 1;
   }
 
   static tflite::AllOpsResolver all_ops_resolver;
@@ -131,7 +131,7 @@ void setup(char *model_filename, m_info_t *info)
 
   if (allocate_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
-    return;
+    return 1;
   }
 
   memset(info, 0, sizeof(m_info_t));
@@ -141,6 +141,8 @@ void setup(char *model_filename, m_info_t *info)
   info->bytes = input->bytes;
   info->width = input->dims->data[2];
   info->height = input->dims->data[1];
+
+  return 0;
 }
 
 void detect(unsigned char *image)

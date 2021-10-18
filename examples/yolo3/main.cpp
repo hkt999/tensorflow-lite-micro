@@ -31,14 +31,17 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	setup(argv[1], &info); /* setup the nn and models */
+	if (setup(argv[1], &info) != 0) {
+		printf("error !\n");
+		return -1;
+	}
 
 	printf("NN input width = %d\n", info.width);
 	printf("NN input height = %d\n", info.height);
 	Mat img, dstImg;
 	img = imread(argv[2]);
 	if (!img.data) {
-		cout << "cannot open the image";
+		cout << "cannot open the image (" << argv[2] << ")" << std::endl;
 		return -1;
 	}
 	resize(img, dstImg, Size(info.width, info.height));

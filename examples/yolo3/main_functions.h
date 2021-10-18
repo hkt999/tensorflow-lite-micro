@@ -29,7 +29,7 @@ typedef struct m_info_s {
 } m_info_t;
 // Initializes all data needed for the example. The name is important, and needs
 // to be setup() for Arduino compatibility.
-void setup(char *model_filename, m_info_t *info);
+int setup(char *model_filename, m_info_t *info);
 
 // Runs one iteration of data gathering and inference. This should be called
 // repeatedly from the application code. The name needs to be loop() for Arduino
