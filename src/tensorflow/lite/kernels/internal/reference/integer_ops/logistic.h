@@ -58,6 +58,43 @@ inline void Logistic(int32_t input_zero_point, int32_t input_range_radius,
   }
 }
 
+inline void Logistic(int32_t input_zero_point, int32_t input_range_radius,
+                     int32_t input_multiplier, int32_t input_left_shift,
+                     int32_t input_size, const uint8_t* input_data,
+                     uint8_t* output_data) {
+  // Integer bits must be in sync with Prepare() function.
+  static constexpr int32_t kInputIntegerBits = 4;
+  static constexpr int32_t kOutputIntegerBits = 8;
+  static constexpr int8_t kMinUInt8 = std::numeric_limits<uint8_t>::min();
+  static constexpr int8_t kMaxUInt8 = std::numeric_limits<uint8_t>::max();
+  static constexpr int32_t kOutputZeroPoint = -128;
+
+  for (int i = 0; i < input_size; ++i) {
+    const int32_t input =
+        static_cast<int32_t>(input_data[i]) - input_zero_point;
+    if (input <= -input_range_radius) {
+      output_data[i] = kMinUInt8;
+    } else if (input >= input_range_radius) {
+      output_data[i] = kMaxUInt8;
+    } else {
+      const int32_t input_in_q4 = MultiplyByQuantizedMultiplier(
+          input, input_multiplier, input_left_shift);
+      using FixedPoint4 = gemmlowp::FixedPoint<int32_t, kInputIntegerBits>;
+      const int32_t output_in_q0 =
+          gemmlowp::logistic(FixedPoint4::FromRaw(input_in_q4)).raw();
+
+      // Rescale and downcast.
+      using gemmlowp::RoundingDivideByPOT;
+      int32_t output_in_q23 =
+          RoundingDivideByPOT(output_in_q0, 31 - kOutputIntegerBits);
+      output_in_q23 = std::min(std::max(output_in_q23 + kOutputZeroPoint,
+                                        static_cast<int32_t>(kMinUInt8)),
+                               static_cast<int32_t>(kMaxUInt8));
+      output_data[i] = static_cast<uint8_t>(output_in_q23);
+    }
+  }
+}
+
 inline void Logistic(int32_t input_multiplier, int32_t input_size,
                      const int16_t* ptr_input_data, int16_t* ptr_output_data) {
   // We use the LUT for sigmoid and take into account, that

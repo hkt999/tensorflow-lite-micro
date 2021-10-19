@@ -122,6 +122,23 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
                            TfLiteTypeGetName(output->type));
         return kTfLiteError;
     }
+  } if (input->type == kTfLiteUInt8) {
+	switch (output->type) {
+	  case kTfLiteUInt8: {
+        reference_integer_ops::Logistic(
+            data->input_zero_point, data->input_range_radius,
+            data->input_multiplier, data->input_left_shift,
+            NumElements(input->dims),
+            tflite::micro::GetTensorData<uint8_t>(input),
+            tflite::micro::GetTensorData<uint8_t>(output));
+        return kTfLiteOk;
+      }
+      default:
+        TF_LITE_KERNEL_LOG(context, "Input %s, output %s not supported.",
+                           TfLiteTypeGetName(input->type),
+                           TfLiteTypeGetName(output->type));
+	    return kTfLiteError;
+	}
   } else {
     // TODO(b/141211002): Also support other data types once we have supported
     // temporary tensors in TFLM.
