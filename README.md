@@ -1,8 +1,9 @@
 
-# TensorFlow Lite Micro for Linux / MacOS
+# TensorFlow Lite Micro Library for Embedded System or MicroControllers
 
 An Open Source Machine Learning Framework for Everyone. This project is derived from PICO tensorflow-lite project.
-And make it buildable with Linux and MacOS toolchain, so that we can debug and test our models in a desktop environment.
+And make it buildable with Linux / MacOS and other toolchain, so that we can debug and test our models in a desktop
+environment.
 
 ## Introduction
 
@@ -12,11 +13,7 @@ images, recognize gestures from an accelerometer, and other sensor analysis task
 
 ## Getting Started
 
-First you'll need to follow the Pico setup instructions to initialize the development
-environment on your machine. Once that is done, make sure that the PICO_SDK_PATH
-environment variable has been set to the location of the Pico SDK, either in the shell
-you're building in, or the CMake configure environment variable setting of the extension
-if you're using VS Code.
+First you'll need to install toolchain on your system, include C/C++ compiler and CMake
 
 You should then be able to build the library, tests, and examples. The easiest way to
 build is using VS Code's CMake integration, by loading the project and choosing the
