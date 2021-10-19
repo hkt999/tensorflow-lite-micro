@@ -9,7 +9,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE DEBUG)
 set(CMAKE_CXX_FLAGS "-fno-rtti -fno-threadsafe-statics")
-#set(CMAKE_CXX_FLAGS "-fexceptions")
 
 add_library(
   tensorflow-lite 
