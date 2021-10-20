@@ -211,6 +211,9 @@ TfLiteStatus ParseLeakyRelu(const Operator* op, ErrorReporter* error_reporter,
 TfLiteStatus ParseExp(const Operator* op, ErrorReporter* error_reporter,
                         BuiltinDataAllocator* allocator, void **builtin_data);
 
+TfLiteStatus ParseTranspose(const Operator* op, ErrorReporter* error_reporter,
+		                BuiltinDataAllocator* allocator, void **builtin_data);
+
 TfLiteStatus ParseReshape(const Operator* op, ErrorReporter* error_reporter,
                           BuiltinDataAllocator* allocator, void** builtin_data);
 

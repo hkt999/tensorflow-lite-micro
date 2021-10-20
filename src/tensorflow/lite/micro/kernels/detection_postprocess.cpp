@@ -26,33 +26,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 
-#define DEBUG
-
-#ifdef DEBUG
-#define DEBUG0(fmt...)	printf(fmt)
-
-#define _kOutputTensorDetectionBoxes	0
-#define _kOutputTensorDetectionClasses	1
-#define _kOutputTensorDetectionScores	2
-#define _kOutputTensorNumDetections		3
-static TfLiteContext *__c = 0;
-static TfLiteNode *__n = 0;
-void PPDump()
-{
-#if 0
-  void* detection_boxes = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionBoxes)->data.raw;
-  void* detection_classes = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionClasses)->data.raw;
-  void* detection_scores = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorDetectionScores)->data.raw;
-  void* num_detections = tflite::micro::GetEvalOutput(__c, __n, _kOutputTensorNumDetections)->data.raw;
-  DEBUG0("[PP_DUMP]   detection_boxes addr = %p\n", detection_boxes);
-  DEBUG0("[PP_DUMP] detection_classes addr = %p\n", detection_classes);
-  DEBUG0("[PP_DUMP]  detection_scores addr = %p\n", detection_scores);
-  DEBUG0("[PP_DUMP]    num_detections addr = %p\n", num_detections);
-#endif
-}
-#else
 #define DEBUG0(fmt...) (void(0))
-#endif
 
 namespace tflite {
 namespace {
@@ -201,11 +175,6 @@ void Free(TfLiteContext* context, void* buffer)
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = static_cast<OpData*>(node->user_data);
 
-#ifdef DEBUG
-  __c = context;
-  __n = node;
-#endif
-
   // Inputs: box_encodings, scores, anchors
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
   const TfLiteTensor* input_box_encodings =
@@ -285,10 +254,6 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
   // Outputs: detection_boxes, detection_scores, detection_classes, num_detections
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 4);
-
-#ifdef DEBUG
-  PPDump();
-#endif
 
   return kTfLiteOk;
 }

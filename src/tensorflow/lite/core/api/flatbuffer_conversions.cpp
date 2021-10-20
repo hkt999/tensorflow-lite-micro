@@ -1112,6 +1112,15 @@ TfLiteStatus ParseEqual(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
 // We have this parse function instead of directly returning kTfLiteOk from the
 // switch-case in ParseOpData because this function is used as part of the
 // selective registration for the OpResolver implementation in micro.
+TfLiteStatus ParseTranspose(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
+                        void**) {
+  DEBUG0("%s (%d) %s (DONE)\n", __FILE__, __LINE__, __FUNCTION__);
+  return kTfLiteOk;
+}
+
+// We have this parse function instead of directly returning kTfLiteOk from the
+// switch-case in ParseOpData because this function is used as part of the
+// selective registration for the OpResolver implementation in micro.
 TfLiteStatus ParseExp(const Operator*, ErrorReporter*, BuiltinDataAllocator*,
                         void**) {
   DEBUG0("%s (%d) %s (DONE)\n", __FILE__, __LINE__, __FUNCTION__);

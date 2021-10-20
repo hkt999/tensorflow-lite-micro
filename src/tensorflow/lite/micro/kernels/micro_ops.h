@@ -95,6 +95,7 @@ TfLiteRegistration Register_L2_NORMALIZATION();
 TfLiteRegistration Register_TANH();
 TfLiteRegistration Register_EXP();
 TfLiteRegistration Register_RESIZE_BILINEAR();
+TfLiteRegistration Register_TRANSPOSE();
 }  // namespace micro
 }  // namespace ops
 }  // namespace tflite

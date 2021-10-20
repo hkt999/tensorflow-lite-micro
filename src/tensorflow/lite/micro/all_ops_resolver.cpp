@@ -11,7 +11,6 @@ limitations under the License.
 ==============================================================================*/
 
 #include "tensorflow/lite/micro/all_ops_resolver.h"
-
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
 
 namespace tflite {
@@ -62,6 +61,7 @@ AllOpsResolver::AllOpsResolver() {
   AddRelu6();
   AddLeakyRelu();
   AddExp();
+  AddTranspose();
   AddResizeBilinear();
   AddReshape();
   AddResizeNearestNeighbor();
