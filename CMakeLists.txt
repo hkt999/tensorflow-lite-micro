@@ -7,7 +7,7 @@ set(CMAKE_CXX_COMPILER_WORKS 1)
 project(tensorflow-lite C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_BUILD_TYPE DEBUG)
+set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_FLAGS "-fno-rtti -fno-threadsafe-statics")
 
 add_library(

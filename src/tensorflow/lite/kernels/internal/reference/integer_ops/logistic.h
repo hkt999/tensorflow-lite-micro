@@ -18,6 +18,8 @@ limitations under the License.
 #include <limits>
 #include "tensorflow/lite/kernels/internal/common.h"
 
+#define DEBUG0(fmt...) (void(0))
+
 namespace tflite {
 namespace reference_integer_ops {
 
@@ -25,9 +27,9 @@ inline void Logistic(int32_t input_zero_point, int32_t input_range_radius,
                      int32_t input_multiplier, int32_t input_left_shift,
                      int32_t input_size, const int8_t* input_data,
                      int8_t* output_data) {
-  printf("--->int8 logistic input_zero_point=%d, input_range_radius=%d\n", input_zero_point, input_range_radius);
-  printf("         input_multipier=%d, input_left_shift=%d\n", input_multiplier, input_left_shift);
-  printf("         input_size=%d\n", input_size);
+  DEBUG0("--->int8 logistic input_zero_point=%d, input_range_radius=%d\n", input_zero_point, input_range_radius);
+  DEBUG0("         input_multipier=%d, input_left_shift=%d\n", input_multiplier, input_left_shift);
+  DEBUG0("         input_size=%d\n", input_size);
   // Integer bits must be in sync with Prepare() function.
   static constexpr int32_t kInputIntegerBits = 4;
   static constexpr int32_t kOutputIntegerBits = 8;
@@ -65,9 +67,9 @@ inline void Logistic(int32_t input_zero_point, int32_t input_range_radius,
                      int32_t input_multiplier, int32_t input_left_shift,
                      int32_t input_size, const uint8_t* input_data,
                      uint8_t* output_data) {
-  printf("--->uint8 logistic input_zero_point=%d, input_range_radius=%d\n", input_zero_point, input_range_radius);
-  printf("          input_multipier=%d, input_left_shift=%d\n", input_multiplier, input_left_shift);
-  printf("          input_size=%d\n", input_size);
+  DEBUG0("--->uint8 logistic input_zero_point=%d, input_range_radius=%d\n", input_zero_point, input_range_radius);
+  DEBUG0("          input_multipier=%d, input_left_shift=%d\n", input_multiplier, input_left_shift);
+  DEBUG0("          input_size=%d\n", input_size);
   // Integer bits must be in sync with Prepare() function.
   static constexpr int32_t kInputIntegerBits = 4;
   static constexpr int32_t kOutputIntegerBits = 8;
@@ -78,7 +80,6 @@ inline void Logistic(int32_t input_zero_point, int32_t input_range_radius,
   for (int i = 0; i < input_size; ++i) {
     const int32_t input =
         static_cast<int32_t>(input_data[i]) - input_zero_point;
-	printf("value(%d)=%d\n", i, static_cast<int32_t>(input_data[i]));
     if (input <= -input_range_radius) {
       output_data[i] = kMinUInt8;
     } else if (input >= input_range_radius) {
