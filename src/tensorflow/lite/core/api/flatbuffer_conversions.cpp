@@ -237,9 +237,11 @@ TfLiteStatus ParseOpDataTfLite(const Operator* op, BuiltinOperator op_type,
       return ParsePool(op, error_reporter, allocator, builtin_data);
     }
 
+#if 0
     case BuiltinOperator_LEAKY_RELU: {
       return ParseLeakyRelu(op, error_reporter, allocator, builtin_data);
     }
+#endif
 
     case BuiltinOperator_LESS: {
       return ParseLess(op, error_reporter, allocator, builtin_data);
@@ -793,9 +795,11 @@ TfLiteStatus ParseOpDataTfLite(const Operator* op, BuiltinOperator op_type,
       *builtin_data = params.release();
       return kTfLiteOk;
     }
-	case BuildinOperator_EXP: {
+#if 0
+	case BuiltinOperator_EXP: {
       return ParseExp(op, error_report, allocator, builtin_data);
     }
+#endif
 
     // Below are the ops with no builtin_data structure.
     case BuiltinOperator_BATCH_TO_SPACE_ND:
